@@ -6,7 +6,7 @@ namespace Salesforce.Common.Soql
 {
 	public class JsonPropertySelectListResolver : ISelectListResolver
 	{
-		private bool _ignorePropsWithoutAttribute;
+		private readonly bool _ignorePropsWithoutAttribute;
 		public JsonPropertySelectListResolver(bool ignorePropsWithoutAttribute = false)
 		{
 			_ignorePropsWithoutAttribute = ignorePropsWithoutAttribute;
