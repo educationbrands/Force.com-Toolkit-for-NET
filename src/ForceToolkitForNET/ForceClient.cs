@@ -306,50 +306,43 @@ namespace Salesforce.Force
         }
 
         public async Task<List<BatchResultList>> RunJobAndPollAsync<T>(string objectName, BulkConstants.OperationType operationType,
-            IEnumerable<ISObjectList<T>> recordsLists)
+            IEnumerable<ISObjectList<T>> recordsLists, Action<JobInfoResult> onPoll = null)
         {
-            return await RunJobAndPollAsync(objectName, null, operationType, recordsLists);
+            return await RunJobAndPollAsync(objectName, null, operationType, recordsLists, onPoll);
         }
 
         public async Task<List<BatchResultList>> RunJobAndPollAsync<T>(string objectName, string externalIdFieldName, BulkConstants.OperationType operationType,
-            IEnumerable<ISObjectList<T>> recordsLists)
+            IEnumerable<ISObjectList<T>> recordsLists, Action<JobInfoResult> onPoll = null)
         {
-            const float pollingStart = 1000;
-            const float pollingIncrease = 2.0f;
+            const int pollIntervalInMillis = 5000;
+            const int maxPollingDurationInMillis = 600000; // 10 minutes
 
             var batchInfoResults = await RunJobAsync(objectName, externalIdFieldName, operationType, recordsLists);
 
-            var currentPoll = pollingStart;
-            var finishedBatchInfoResults = new List<BatchInfoResult>();
-            while (batchInfoResults.Count > 0)
+            int passedPollingMillis = 0;
+            while (passedPollingMillis <= maxPollingDurationInMillis)
             {
-                var removeList = new List<BatchInfoResult>();
-                foreach (var batchInfoResult in batchInfoResults)
+                var jobResult = await PollJobAsync(batchInfoResults[0].JobId);
+                try
                 {
-                    var batchInfoResultNew = await PollBatchAsync(batchInfoResult);
-                    if (batchInfoResultNew.State.Equals(BulkConstants.BatchState.Completed.Value()) ||
-                        batchInfoResultNew.State.Equals(BulkConstants.BatchState.Failed.Value()) ||
-                        batchInfoResultNew.State.Equals(BulkConstants.BatchState.NotProcessed.Value()))
-                    {
-                        finishedBatchInfoResults.Add(batchInfoResultNew);
-                        removeList.Add(batchInfoResult);
-                    }
+                    if (onPoll != null)
+                        onPoll(jobResult);
                 }
-                foreach (var removeItem in removeList)
-                {
-                    batchInfoResults.Remove(removeItem);
-                }
+                catch (Exception e) { }
 
-                await Task.Delay((int)currentPoll);
-                currentPoll *= pollingIncrease;
+                if (jobResult.NumberBatchesTotal == jobResult.NumberBatchesCompleted + jobResult.NumberBatchesFailed)
+                    break;
+
+                await Task.Delay((int)pollIntervalInMillis);
+                passedPollingMillis += pollIntervalInMillis;
             }
 
-
             var batchResults = new List<BatchResultList>();
-            foreach (var batchInfoResultComplete in finishedBatchInfoResults)
+            foreach (var batchInfoResultComplete in batchInfoResults)
             {
                 batchResults.Add(await GetBatchResultAsync(batchInfoResultComplete));
             }
+
             return batchResults;
         }
 
