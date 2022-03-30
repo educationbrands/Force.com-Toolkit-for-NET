@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -18,16 +21,20 @@ namespace Salesforce.Common
         public string ApiVersion { get; set; }
 
         private const string UserAgent = "forcedotcom-toolkit-dotnet";
-        private const string TokenRequestEndpointUrl = "https://login.salesforce.com/services/oauth2/token";
         private readonly HttpClient _httpClient;
-        private readonly bool _disposeHttpClient;
 
-        public AuthenticationClient(string apiVersion = "v36.0")
+        private readonly bool _disposeHttpClient;
+        private readonly string _domain;
+        private readonly string _tokenRequestEndpointUrl;
+
+        public AuthenticationClient(string domain, string apiVersion = "v36.0")
             : this(new HttpClient(), apiVersion)
         {
+            _domain = "https://" + domain;
+            _tokenRequestEndpointUrl = "https://" + domain + "/services/oauth2/token";
         }
 
-        public AuthenticationClient(HttpClient httpClient, string apiVersion  = "v36.0", bool callerWillDisposeHttpClient = false)
+        public AuthenticationClient(HttpClient httpClient, string apiVersion = "v36.0", bool callerWillDisposeHttpClient = false)
         {
             if (httpClient == null) throw new ArgumentNullException("httpClient");
 
@@ -38,7 +45,7 @@ namespace Salesforce.Common
 
         public Task UsernamePasswordAsync(string clientId, string clientSecret, string username, string password)
         {
-            return UsernamePasswordAsync(clientId, clientSecret, username, password, TokenRequestEndpointUrl);
+            return UsernamePasswordAsync(clientId, clientSecret, username, password, _tokenRequestEndpointUrl);
         }
 
         public async Task UsernamePasswordAsync(string clientId, string clientSecret, string username, string password, string tokenRequestEndpointUrl)
@@ -63,10 +70,10 @@ namespace Salesforce.Common
             {
                 Method = HttpMethod.Post,
                 RequestUri = new Uri(tokenRequestEndpointUrl),
-				Content = content
+                Content = content
             };
 
-			request.Headers.UserAgent.ParseAdd(string.Concat(UserAgent, "/", ApiVersion));
+            request.Headers.UserAgent.ParseAdd(string.Concat(UserAgent, "/", ApiVersion));
 
             var responseMessage = await _httpClient.SendAsync(request).ConfigureAwait(false);
             var response = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -88,7 +95,7 @@ namespace Salesforce.Common
 
         public Task WebServerAsync(string clientId, string clientSecret, string redirectUri, string code)
         {
-            return WebServerAsync(clientId, clientSecret, redirectUri, code, TokenRequestEndpointUrl);
+            return WebServerAsync(clientId, clientSecret, redirectUri, code, _tokenRequestEndpointUrl);
         }
 
         public async Task WebServerAsync(string clientId, string clientSecret, string redirectUri, string code, string tokenRequestEndpointUrl)
@@ -117,7 +124,7 @@ namespace Salesforce.Common
                 Content = content
             };
 
-			request.Headers.UserAgent.ParseAdd(string.Concat(UserAgent, "/", ApiVersion));
+            request.Headers.UserAgent.ParseAdd(string.Concat(UserAgent, "/", ApiVersion));
 
             var responseMessage = await _httpClient.SendAsync(request).ConfigureAwait(false);
             var response = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -142,13 +149,67 @@ namespace Salesforce.Common
                 {
                     throw new ForceAuthException(Error.UnknownException, ex.Message);
                 }
-                
+
+            }
+        }
+
+        public async Task JwtBearerAsync(string clientId, string user, string pfxPathName, string pfxPassword = "")
+        {
+            var claims = new Dictionary<string, string>()
+            {
+                { "iss", clientId },
+                { "aud", _domain },
+                { "sub", user },
+                { "exp", DateTimeOffset.Now.AddMinutes(3).ToUnixTimeSeconds().ToString() }
+            };
+
+            var cert = new X509Certificate2(pfxPathName, pfxPassword);
+            var key = cert.GetRSAPrivateKey();
+
+            var encodedToken = Jose.JWT.Encode(claims, key, Jose.JwsAlgorithm.RS256);
+
+            var content = new FormUrlEncodedContent(new[] {
+                new KeyValuePair<string, string>("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"),
+                new KeyValuePair<string, string>("assertion", encodedToken)
+            });
+
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri(_tokenRequestEndpointUrl),
+                Content = content
+            };
+
+            var responseMessage = await _httpClient.SendAsync(request).ConfigureAwait(false);
+            var response = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            if (responseMessage.IsSuccessStatusCode)
+            {
+                var authToken = JsonConvert.DeserializeObject<AuthToken>(response);
+
+                AccessToken = authToken.AccessToken;
+                InstanceUrl = authToken.InstanceUrl;
+                Id = authToken.Id;
+                RefreshToken = authToken.RefreshToken;
+            }
+            else
+            {
+                try
+                {
+                    var errorResponse = JsonConvert.DeserializeObject<AuthErrorResponse>(response);
+                    throw new ForceAuthException(errorResponse.Error, errorResponse.ErrorDescription);
+                }
+                catch (Exception ex)
+                {
+                    throw new ForceAuthException(Error.UnknownException, ex.Message);
+                }
+
             }
         }
 
         public Task TokenRefreshAsync(string clientId, string refreshToken, string clientSecret = "")
         {
-            return TokenRefreshAsync(clientId, refreshToken, clientSecret, TokenRequestEndpointUrl);
+            return TokenRefreshAsync(clientId, refreshToken, clientSecret, _tokenRequestEndpointUrl);
         }
 
         public async Task TokenRefreshAsync(string clientId, string refreshToken, string clientSecret, string tokenRequestEndpointUrl)
@@ -165,7 +226,7 @@ namespace Salesforce.Common
                 RequestUri = new Uri(url)
             };
 
-			request.Headers.UserAgent.ParseAdd(string.Concat(UserAgent, "/", ApiVersion));
+            request.Headers.UserAgent.ParseAdd(string.Concat(UserAgent, "/", ApiVersion));
 
             var responseMessage = await _httpClient.SendAsync(request).ConfigureAwait(false);
             var response = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
