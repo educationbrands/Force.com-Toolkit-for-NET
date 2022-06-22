@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -88,8 +89,7 @@ namespace Salesforce.Common
             }
             else
             {
-                var errorResponse = JsonConvert.DeserializeObject<AuthErrorResponse>(response);
-                throw new ForceAuthException(errorResponse.Error, errorResponse.ErrorDescription, responseMessage.StatusCode);
+                await HandleFailedResponse(responseMessage);
             }
         }
 
@@ -139,18 +139,7 @@ namespace Salesforce.Common
                 RefreshToken = authToken.RefreshToken;
             }
             else
-            {
-                try
-                {
-                    var errorResponse = JsonConvert.DeserializeObject<AuthErrorResponse>(response);
-                    throw new ForceAuthException(errorResponse.Error, errorResponse.ErrorDescription);
-                }
-                catch (Exception ex)
-                {
-                    throw new ForceAuthException(Error.UnknownException, ex.Message + " Raw response: " + response, ex);
-                }
-
-            }
+                await HandleFailedResponse(responseMessage);
         }
 
         public async Task JwtBearerAsync(string clientId, string user, string pfxPathName, string pfxPassword = "")
@@ -193,18 +182,7 @@ namespace Salesforce.Common
                 RefreshToken = authToken.RefreshToken;
             }
             else
-            {
-                try
-                {
-                    var errorResponse = JsonConvert.DeserializeObject<AuthErrorResponse>(response);
-                    throw new ForceAuthException(errorResponse.Error, errorResponse.ErrorDescription);
-                }
-                catch (Exception ex)
-                {
-                    throw new ForceAuthException(Error.UnknownException, ex.Message + " Raw response: " + response, ex);
-                }
-
-            }
+                await HandleFailedResponse(responseMessage);
         }
 
         public Task TokenRefreshAsync(string clientId, string refreshToken, string clientSecret = "")
@@ -241,12 +219,8 @@ namespace Salesforce.Common
                 Id = authToken.Id;
             }
             else
-            {
-                var errorResponse = JsonConvert.DeserializeObject<AuthErrorResponse>(response);
-                throw new ForceException(errorResponse.Error, errorResponse.ErrorDescription);
-            }
+                await HandleFailedResponse(responseMessage);
         }
-
 
         public async Task GetLatestVersionAsync()
         {
@@ -280,9 +254,29 @@ namespace Salesforce.Common
                 }
                 else
                 {
-                    var errorResponse = JsonConvert.DeserializeObject<AuthErrorResponse>(response);
-                        throw new ForceException(errorResponse.Error, errorResponse.ErrorDescription);
+                    await HandleFailedResponse(responseMessage);
                 }
+            }
+            catch (Exception ex)
+            {
+                throw new ForceAuthException(Error.UnknownException, ex.Message, ex);
+            }
+        }
+
+        private async Task HandleFailedResponse(HttpResponseMessage response)
+        {
+            try
+            {
+                var errorResponse = JsonConvert.DeserializeObject<AuthErrorResponse>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+                throw new ForceAuthException(errorResponse.Error, errorResponse.ErrorDescription, response.StatusCode);
+            }
+            catch (JsonReaderException ex)
+            {
+                throw new ForceAuthException("Unknown", $"Request to endpoint {response.RequestMessage.RequestUri} failed", response.StatusCode);
+            }
+            catch (ForceAuthException ex)
+            {
+                throw;
             }
             catch (Exception ex)
             {
