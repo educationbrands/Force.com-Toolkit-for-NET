@@ -91,7 +91,7 @@ namespace Salesforce.Common
             T result;
             using (TextReader reader = new StringReader(inputString))
             {
-                result = (T) serializer.Deserialize(reader);
+                result = (T)serializer.Deserialize(reader);
             }
             return result;
         }
