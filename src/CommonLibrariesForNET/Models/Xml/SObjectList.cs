@@ -10,7 +10,6 @@ namespace Salesforce.Common.Models.Xml
     [XmlRoot(Namespace = "http://www.force.com/2009/06/asyncapi/dataload", ElementName = "sObjects")]
     public sealed class SObjectList<T> : List<T>, ISObjectList<T>
     {
-
         public XmlSchema GetSchema()
         {
             return null;

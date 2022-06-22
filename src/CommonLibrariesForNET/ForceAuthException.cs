@@ -33,6 +33,13 @@ namespace Salesforce.Common
             this.HttpStatusCode = httpStatusCode;
         }
 
+        public ForceAuthException(Error error, string description, Exception inner) : base(description, inner)
+        {
+            Error = error;
+            Fields = new string[0];
+            HttpStatusCode = new HttpStatusCode();
+        }
+
         public ForceAuthException(Error error, string description) 
             : base(description)
         {

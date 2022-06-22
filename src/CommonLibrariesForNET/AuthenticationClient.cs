@@ -147,7 +147,7 @@ namespace Salesforce.Common
                 }
                 catch (Exception ex)
                 {
-                    throw new ForceAuthException(Error.UnknownException, ex.Message);
+                    throw new ForceAuthException(Error.UnknownException, ex.Message + " Raw response: " + response, ex);
                 }
 
             }
@@ -201,7 +201,7 @@ namespace Salesforce.Common
                 }
                 catch (Exception ex)
                 {
-                    throw new ForceAuthException(Error.UnknownException, ex.Message);
+                    throw new ForceAuthException(Error.UnknownException, ex.Message + " Raw response: " + response, ex);
                 }
 
             }
@@ -275,18 +275,18 @@ namespace Salesforce.Common
                     }
                     catch (Exception e)
                     {
-                        throw new ForceException(Error.UnknownException, e.Message);
+                        throw new ForceException(Error.UnknownException, e.Message, e);
                     }
                 }
                 else
                 {
                     var errorResponse = JsonConvert.DeserializeObject<AuthErrorResponse>(response);
-                    throw new ForceException(errorResponse.Error, errorResponse.ErrorDescription);
+                        throw new ForceException(errorResponse.Error, errorResponse.ErrorDescription);
                 }
             }
             catch (Exception ex)
             {
-                throw new ForceAuthException(Error.UnknownException, ex.Message);
+                throw new ForceAuthException(Error.UnknownException, ex.Message, ex);
             }
         }
 
