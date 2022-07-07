@@ -31,10 +31,14 @@ namespace Salesforce.Common.Models.Xml
                 }
                 else
                 {
-                    var xmlSerializer = new XmlSerializer(typeof(T), new XmlRootAttribute("sObject"));
+                    // JF:  Check the XmlSerializer Cache before creating a new one
+                    // See: https://github.com/wadewegner/Force.com-Toolkit-for-NET/pull/255
+                    // See: https://docs.microsoft.com/en-us/dotnet/api/system.xml.serialization.xmlserializer?redirectedfrom=MSDN&view=netcore-3.1
+                    XmlSerializer xmlSerializer = XmlSerializerCache.Instance.Value.XmlSerializerDictionary.GetOrAdd(typeof(T).FullName, new XmlSerializer(typeof(T), new XmlRootAttribute("sObject")));
+
                     var ns = new XmlSerializerNamespaces();
                     ns.Add(string.Empty, string.Empty);
-                    var settings = new XmlWriterSettings {OmitXmlDeclaration = true};
+                    var settings = new XmlWriterSettings { OmitXmlDeclaration = true };
                     var stringBuilder = new StringBuilder();
                     using (var xmlWriter = XmlWriter.Create(stringBuilder, settings))
                     {
