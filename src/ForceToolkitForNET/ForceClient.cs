@@ -315,7 +315,7 @@ namespace Salesforce.Force
             IEnumerable<ISObjectList<T>> recordsLists, Action<JobInfoResult> onPoll = null)
         {
             const int pollIntervalInMillis = 5000;
-            const int maxPollingDurationInMillis = 600000; // 10 minutes
+            const int maxPollingDurationInMillis = 600000; // 10 minutes https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/asynch_api_concepts_limits.htm
 
             var batchInfoResults = await RunJobAsync(objectName, externalIdFieldName, operationType, recordsLists);
 
@@ -328,7 +328,11 @@ namespace Salesforce.Force
                     if (onPoll != null)
                         onPoll(jobResult);
                 }
-                catch (Exception e) { }
+                catch (Exception e)
+                {
+                    // We do not know the implementation of the onPoll callback is.
+                    // To prevent breaking the polling flow, we ignore exceptions that happened in this user provided callback.
+                }
 
                 if (jobResult.NumberBatchesTotal == jobResult.NumberBatchesCompleted + jobResult.NumberBatchesFailed)
                     break;
@@ -336,6 +340,9 @@ namespace Salesforce.Force
                 await Task.Delay((int)pollIntervalInMillis);
                 passedPollingMillis += pollIntervalInMillis;
             }
+
+            if (passedPollingMillis <= maxPollingDurationInMillis)
+                throw new ForceException(Error.Unknown, "Batch processing time of 10 minutes exceeded, the job might be retried by SalesForce in the near future.");
 
             var batchResults = new List<BatchResultList>();
             foreach (var batchInfoResultComplete in batchInfoResults)
