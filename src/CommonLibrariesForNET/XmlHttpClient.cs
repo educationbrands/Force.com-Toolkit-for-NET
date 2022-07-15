@@ -74,8 +74,7 @@ namespace Salesforce.Common
 
         private static string SerializeXmlObject(object inputObject)
         {
-            //var xmlSerializer = new XmlSerializer(inputObject.GetType());
-            var xmlSerializer = global::Salesforce.Common.XmlSerializerCache.GetSerializer(inputObject.GetType());
+            var xmlSerializer = XmlSerializerCache.Instance.Value.GetSerializer(inputObject.GetType());
             var stringWriter = new StringWriter();
             string result;
             using (var writer = XmlWriter.Create(stringWriter))
@@ -89,8 +88,7 @@ namespace Salesforce.Common
 
         private static T DeserializeXmlString<T>(string inputString)
         {
-            //var serializer = new XmlSerializer(typeof(T));
-            var serializer = global::Salesforce.Common.XmlSerializerCache.GetSerializer<T>();
+            var serializer = XmlSerializerCache.Instance.Value.GetSerializer<T>();
             T result;
             using (TextReader reader = new StringReader(inputString))
             {

@@ -34,7 +34,7 @@ namespace Salesforce.Common.Models.Xml
                     // JF:  Check the XmlSerializer Cache before creating a new one
                     // See: https://github.com/wadewegner/Force.com-Toolkit-for-NET/pull/255
                     // See: https://docs.microsoft.com/en-us/dotnet/api/system.xml.serialization.xmlserializer?redirectedfrom=MSDN&view=netcore-3.1
-                    XmlSerializer xmlSerializer = XmlSerializerCache.GetSerializer<T>("sObject");
+                    XmlSerializer xmlSerializer = XmlSerializerCache.Instance.Value.GetSerializer<T>("sObject");
 
                     var ns = new XmlSerializerNamespaces();
                     ns.Add(string.Empty, string.Empty);
