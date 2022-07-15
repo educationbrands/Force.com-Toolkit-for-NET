@@ -341,7 +341,7 @@ namespace Salesforce.Force
                 passedPollingMillis += pollIntervalInMillis;
             }
 
-            if (passedPollingMillis <= maxPollingDurationInMillis)
+            if (passedPollingMillis > maxPollingDurationInMillis)
                 throw new ForceException(Error.Unknown, "Batch processing time of 10 minutes exceeded, the job might be retried by SalesForce in the near future.");
 
             var batchResults = new List<BatchResultList>();
