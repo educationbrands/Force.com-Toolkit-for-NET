@@ -3,7 +3,7 @@ using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml;
-using System.Xml.Serialization;
+using System.Xml.Linq;
 using Salesforce.Common.Internals;
 using Salesforce.Common.Models.Json;
 
@@ -74,7 +74,8 @@ namespace Salesforce.Common
 
         private static string SerializeXmlObject(object inputObject)
         {
-            var xmlSerializer = new XmlSerializer(inputObject.GetType());
+            //var xmlSerializer = new XmlSerializer(inputObject.GetType());
+            var xmlSerializer = global::Salesforce.Common.XmlSerializerCache.GetSerializer(inputObject.GetType());
             var stringWriter = new StringWriter();
             string result;
             using (var writer = XmlWriter.Create(stringWriter))
@@ -82,12 +83,14 @@ namespace Salesforce.Common
                 xmlSerializer.Serialize(writer, inputObject);
                 result = stringWriter.ToString();
             }
+            stringWriter.Dispose();
             return result;
         }
 
         private static T DeserializeXmlString<T>(string inputString)
         {
-            var serializer = new XmlSerializer(typeof(T));
+            //var serializer = new XmlSerializer(typeof(T));
+            var serializer = global::Salesforce.Common.XmlSerializerCache.GetSerializer<T>();
             T result;
             using (TextReader reader = new StringReader(inputString))
             {
