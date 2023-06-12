@@ -38,8 +38,8 @@
     <ProjectReference Include="..\CommonLibrariesForNET\CommonLibrariesForNET.csproj" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.27.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.31.0" />
   </ItemGroup>
   <Target Name="IncludeSalesforceCommon">
     <ItemGroup>
