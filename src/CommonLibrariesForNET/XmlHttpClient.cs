@@ -25,14 +25,14 @@ namespace Salesforce.Common
         public async Task<T> HttpGetAsync<T>(string urlSuffix)
         {
             var url = Common.FormatUrl(urlSuffix, InstanceUrl, ApiVersion);
-            return await HttpGetAsync<T>(url);
+            return await HttpGetAsync<T>(url).ConfigureAwait(false);
         }
 
         public async Task<T> HttpGetAsync<T>(Uri uri)
         {
             try
             {
-                var response = await HttpGetAsync(uri);
+                var response = await HttpGetAsync(uri).ConfigureAwait(false);
                 return DeserializeXmlString<T>(response);
             }
             catch (BaseHttpClientException e)
@@ -46,7 +46,7 @@ namespace Salesforce.Common
         public async Task<T> HttpPostAsync<T>(object inputObject, string urlSuffix)
         {
             var url = Common.FormatUrl(urlSuffix, InstanceUrl, ApiVersion);
-            return await HttpPostAsync<T>(inputObject, url);
+            return await HttpPostAsync<T>(inputObject, url).ConfigureAwait(false);
         }
 
         public async Task<T> HttpPostAsync<T>(object inputObject, Uri uri)
@@ -54,7 +54,7 @@ namespace Salesforce.Common
             var postBody = SerializeXmlObject(inputObject);
             try
             {
-                var response = await HttpPostAsync(postBody, uri);
+                var response = await HttpPostAsync(postBody, uri).ConfigureAwait(false);
                 return DeserializeXmlString<T>(response);
             }
             catch (BaseHttpClientException e)
