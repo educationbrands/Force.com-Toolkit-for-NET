@@ -86,7 +86,7 @@ namespace Salesforce.Common
             }
             else
             {
-                await HandleFailedResponse(responseMessage);
+                await HandleFailedResponse(responseMessage).ConfigureAwait(false);
             }
         }
 
@@ -136,7 +136,7 @@ namespace Salesforce.Common
                 RefreshToken = authToken.RefreshToken;
             }
             else
-                await HandleFailedResponse(responseMessage);
+                await HandleFailedResponse(responseMessage).ConfigureAwait(false);
         }
 
         public async Task JwtBearerAsync(string clientId, string user, string pfxPathName, string pfxPassword = "")
@@ -179,7 +179,7 @@ namespace Salesforce.Common
                 RefreshToken = authToken.RefreshToken;
             }
             else
-                await HandleFailedResponse(responseMessage);
+                await HandleFailedResponse(responseMessage).ConfigureAwait(false);
         }
 
         public Task TokenRefreshAsync(string clientId, string refreshToken, string clientSecret = "")
@@ -216,7 +216,7 @@ namespace Salesforce.Common
                 Id = authToken.Id;
             }
             else
-                await HandleFailedResponse(responseMessage);
+                await HandleFailedResponse(responseMessage).ConfigureAwait(false);
         }
 
         public async Task GetLatestVersionAsync()
@@ -224,7 +224,7 @@ namespace Salesforce.Common
             try
             {
                 string serviceURL = InstanceUrl + @"/services/data/";
-                HttpResponseMessage responseMessage = await _httpClient.GetAsync(serviceURL);
+                HttpResponseMessage responseMessage = await _httpClient.GetAsync(serviceURL).ConfigureAwait(false);
 
                 var response = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
                 if (responseMessage.IsSuccessStatusCode)
@@ -251,7 +251,7 @@ namespace Salesforce.Common
                 }
                 else
                 {
-                    await HandleFailedResponse(responseMessage);
+                    await HandleFailedResponse(responseMessage).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
