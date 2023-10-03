@@ -34,7 +34,7 @@ namespace Salesforce.Common
 
         public AuthenticationClient(HttpClient httpClient, string apiVersion = "v36.0", bool callerWillDisposeHttpClient = false)
         {
-            if (httpClient == null) throw new ArgumentNullException("httpClient");
+            if (httpClient == null) throw new ArgumentNullException(nameof(httpClient));
 
             _httpClient = httpClient;
             _disposeHttpClient = !callerWillDisposeHttpClient;
@@ -48,11 +48,11 @@ namespace Salesforce.Common
 
         public async Task UsernamePasswordAsync(string clientId, string clientSecret, string username, string password, string tokenRequestEndpointUrl)
         {
-            if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException("clientId");
-            if (string.IsNullOrEmpty(clientSecret)) throw new ArgumentNullException("clientSecret");
-            if (string.IsNullOrEmpty(username)) throw new ArgumentNullException("username");
-            if (string.IsNullOrEmpty(password)) throw new ArgumentNullException("password");
-            if (string.IsNullOrEmpty(tokenRequestEndpointUrl)) throw new ArgumentNullException("tokenRequestEndpointUrl");
+            if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException(nameof(clientId));
+            if (string.IsNullOrEmpty(clientSecret)) throw new ArgumentNullException(nameof(clientSecret));
+            if (string.IsNullOrEmpty(username)) throw new ArgumentNullException(nameof(username));
+            if (string.IsNullOrEmpty(password)) throw new ArgumentNullException(nameof(password));
+            if (string.IsNullOrEmpty(tokenRequestEndpointUrl)) throw new ArgumentNullException(nameof(tokenRequestEndpointUrl));
             if (!Uri.IsWellFormedUriString(tokenRequestEndpointUrl, UriKind.Absolute)) throw new FormatException("tokenRequestEndpointUrl");
 
             var content = new FormUrlEncodedContent(new[]
@@ -97,12 +97,12 @@ namespace Salesforce.Common
 
         public async Task WebServerAsync(string clientId, string clientSecret, string redirectUri, string code, string tokenRequestEndpointUrl)
         {
-            if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException("clientId");
-            if (string.IsNullOrEmpty(clientSecret)) throw new ArgumentNullException("clientSecret");
-            if (string.IsNullOrEmpty(redirectUri)) throw new ArgumentNullException("redirectUri");
+            if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException(nameof(clientId));
+            if (string.IsNullOrEmpty(clientSecret)) throw new ArgumentNullException(nameof(clientSecret));
+            if (string.IsNullOrEmpty(redirectUri)) throw new ArgumentNullException(nameof(redirectUri));
             if (!Uri.IsWellFormedUriString(redirectUri, UriKind.Absolute)) throw new FormatException("redirectUri");
-            if (string.IsNullOrEmpty(code)) throw new ArgumentNullException("code");
-            if (string.IsNullOrEmpty(tokenRequestEndpointUrl)) throw new ArgumentNullException("tokenRequestEndpointUrl");
+            if (string.IsNullOrEmpty(code)) throw new ArgumentNullException(nameof(code));
+            if (string.IsNullOrEmpty(tokenRequestEndpointUrl)) throw new ArgumentNullException(nameof(tokenRequestEndpointUrl));
             if (!Uri.IsWellFormedUriString(tokenRequestEndpointUrl, UriKind.Absolute)) throw new FormatException("tokenRequestEndpointUrl");
 
             var content = new FormUrlEncodedContent(new[]
