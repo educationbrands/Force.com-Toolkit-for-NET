@@ -17,7 +17,34 @@ namespace Salesforce.Force
         protected readonly XmlHttpClient _xmlHttpClient;
         protected readonly JsonHttpClient _jsonHttpClient;
 
-	    public ISelectListResolver SelectListResolver { get; set; }
+        private Func<HttpResponseMessage, Task> _afterResponse;
+        private Func<HttpRequestMessage, Task> _beforeRequest;
+
+        public ISelectListResolver SelectListResolver { get; set; }
+
+        public Func<HttpRequestMessage, Task> BeforeRequest
+        {
+            get => _beforeRequest;
+            set
+            {
+                _beforeRequest = value;
+
+                _xmlHttpClient.BeforeRequest = _beforeRequest;
+                _jsonHttpClient.BeforeRequest = _beforeRequest;
+            }
+        }
+
+        public Func<HttpResponseMessage, Task> AfterResponse
+        {
+            get => _afterResponse;
+            set
+            {
+                _afterResponse = value;
+
+                _xmlHttpClient.AfterResponse = _afterResponse;
+                _jsonHttpClient.AfterResponse = _afterResponse;
+            }
+        }
 
         public ForceClient(string instanceUrl, string accessToken, string apiVersion)
             : this(instanceUrl, accessToken, apiVersion, new HttpClient(), new HttpClient())

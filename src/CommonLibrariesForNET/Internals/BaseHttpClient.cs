@@ -18,6 +18,9 @@ namespace Salesforce.Common.Internals
         protected string ApiVersion;
         protected readonly HttpClient HttpClient;
 
+        public Func<HttpRequestMessage, Task>? BeforeRequest;
+        public Func<HttpResponseMessage, Task>? AfterResponse;
+
         internal BaseHttpClient(string instanceUrl, string apiVersion, string contentType, HttpClient httpClient, bool callerWillDisposeHttpClient = false)
         {
             if (string.IsNullOrEmpty(instanceUrl)) throw new ArgumentNullException("instanceUrl");
@@ -48,7 +51,14 @@ namespace Salesforce.Common.Internals
 
         protected async Task<string> HttpGetAsync(Uri uri)
         {
+            var request = new HttpRequestMessage(HttpMethod.Get, uri);
+
+            BeforeRequest?.Invoke(request);
+
             var responseMessage = await HttpClient.GetAsync(uri).ConfigureAwait(false);
+
+            AfterResponse?.Invoke(responseMessage);
+
             if (responseMessage.StatusCode == HttpStatusCode.NoContent)
             {
                 return string.Empty;
@@ -67,7 +77,15 @@ namespace Salesforce.Common.Internals
         {
             var content = new StringContent(payload, Encoding.UTF8, _contentType);
 
+            var request = new HttpRequestMessage(HttpMethod.Post, uri);
+            request.Content = content;
+
+            BeforeRequest?.Invoke(request);
+
             var responseMessage = await HttpClient.PostAsync(uri, content).ConfigureAwait(false);
+
+            AfterResponse?.Invoke(responseMessage);
+
             if (responseMessage.StatusCode == HttpStatusCode.NoContent)
             {
                 return string.Empty;
@@ -93,7 +111,12 @@ namespace Salesforce.Common.Internals
                 Content = content
             };
 
+            BeforeRequest?.Invoke(request);
+
             var responseMessage = await HttpClient.SendAsync(request).ConfigureAwait(false);
+
+            AfterResponse?.Invoke(responseMessage);
+
             if (responseMessage.StatusCode == HttpStatusCode.NoContent)
             {
                 return string.Empty;
@@ -110,7 +133,14 @@ namespace Salesforce.Common.Internals
 
         protected async Task<string> HttpDeleteAsync(Uri uri)
         {
+            var request = new HttpRequestMessage(HttpMethod.Delete, uri);
+
+            BeforeRequest?.Invoke(request);
+
             var responseMessage = await HttpClient.DeleteAsync(uri).ConfigureAwait(false);
+
+            AfterResponse?.Invoke(responseMessage);
+
             if (responseMessage.StatusCode == HttpStatusCode.NoContent)
             {
                 return string.Empty;
