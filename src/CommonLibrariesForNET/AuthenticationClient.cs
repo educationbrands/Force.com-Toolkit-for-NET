@@ -25,14 +25,14 @@ namespace Salesforce.Common
         private readonly string _domain;
         private readonly string _tokenRequestEndpointUrl;
 
-        public AuthenticationClient(string domain, string apiVersion = "v36.0")
+        public AuthenticationClient(string domain, string apiVersion = _Config.API_VERSION)
             : this(new HttpClient(), apiVersion)
         {
             _domain = "https://" + domain;
             _tokenRequestEndpointUrl = "https://" + domain + "/services/oauth2/token";
         }
 
-        public AuthenticationClient(HttpClient httpClient, string apiVersion = "v36.0", bool callerWillDisposeHttpClient = false)
+        public AuthenticationClient(HttpClient httpClient, string apiVersion = _Config.API_VERSION, bool callerWillDisposeHttpClient = false)
         {
             if (httpClient == null) throw new ArgumentNullException(nameof(httpClient));
 

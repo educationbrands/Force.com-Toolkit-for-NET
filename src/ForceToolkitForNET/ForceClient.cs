@@ -368,8 +368,10 @@ namespace Salesforce.Force
                 passedPollingMillis += pollIntervalInMillis;
             }
 
+            // https://developer.salesforce.com/docs/atlas.en-us.200.0.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_bulkapi.htm
+            // There is a five - minute limit for processing 100 records.Also, if it takes longer than 10 minutes to process a batch, the Bulk API places the remainder of the batch back in the queue for later processing. If the Bulk API continues to exceed the 10 - minute limit on subsequent attempts, the batch is placed back in the queue and reprocessed up to 10 times before the batch is permanently marked as failed.
             if (passedPollingMillis > maxPollingDurationInMillis)
-                throw new ForceException(Error.Unknown, "Batch processing time of 10 minutes exceeded, the job might be retried by SalesForce in the near future.");
+                throw new ForceException(Error.BatchTimeout, "Batch processing time of 10 minutes exceeded, the batch will be retried by SalesForce in the near future.");
 
             var batchResults = new List<BatchResultList>();
             foreach (var batchInfoResultComplete in batchInfoResults)

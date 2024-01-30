@@ -238,6 +238,7 @@
         WeblinkSizeLimitExceeded,
         WrongControllerType,
         NonJsonErrorResponse,
-        WeblinkUrlInvalid
+        WeblinkUrlInvalid,
+        BatchTimeout
     }
 }
