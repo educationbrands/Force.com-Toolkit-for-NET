@@ -12,7 +12,7 @@ using System.Collections;
 
 namespace Salesforce.Force
 {
-    public class ForceClient : IForceClient, IDisposable
+    public class  ForceClient : IForceClient, IDisposable
     {
         protected readonly XmlHttpClient _xmlHttpClient;
         protected readonly JsonHttpClient _jsonHttpClient;
@@ -340,16 +340,13 @@ namespace Salesforce.Force
         public async Task<List<BatchResultList>> RunJobAndPollAsync<T>(string objectName, string externalIdFieldName, BulkConstants.OperationType operationType, IEnumerable<ISObjectList<T>> recordsLists, Action<JobInfoResult> onPoll = null, bool throwOnBatchTimeLimit = true)
         {
             const int pollIntervalInMillis = 5000;
-            const int maxPollingDurationInMillis = 200; // 10 minutes https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/asynch_api_concepts_limits.htm
+            const int maxPollingDurationInMillis = 600000; // 10 minutes https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/asynch_api_concepts_limits.htm
 
             var batchInfoResults = await RunJobAsync(objectName, externalIdFieldName, operationType, recordsLists);
 
             int passedPollingMillis = 0;
             while (passedPollingMillis <= maxPollingDurationInMillis)
             {
-                passedPollingMillis = 1000;
-                break;
-
                 var jobResult = await PollJobAsync(batchInfoResults[0].JobId);
                 try
                 {
