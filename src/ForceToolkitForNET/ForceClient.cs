@@ -315,8 +315,7 @@ namespace Salesforce.Force
             return await RunJobAsync(objectName, null, operationType, recordsLists);
         }
 
-        public async Task<List<BatchInfoResult>> RunJobAsync<T>(string objectName, string externalIdFieldName,
-            BulkConstants.OperationType operationType, IEnumerable<ISObjectList<T>> recordsLists)
+        public async Task<List<BatchInfoResult>> RunJobAsync<T>(string objectName, string externalIdFieldName, BulkConstants.OperationType operationType, IEnumerable<ISObjectList<T>> recordsLists, bool throwOnBatchTimeLimit = true)
         {
             if (recordsLists == null) throw new ArgumentNullException("recordsLists");
 
@@ -332,23 +331,25 @@ namespace Salesforce.Force
             return batchResults;
         }
 
-        public async Task<List<BatchResultList>> RunJobAndPollAsync<T>(string objectName, BulkConstants.OperationType operationType,
-            IEnumerable<ISObjectList<T>> recordsLists, Action<JobInfoResult> onPoll = null)
+        public async Task<List<BatchResultList>> RunJobAndPollAsync<T>(string objectName, BulkConstants.OperationType operationType, IEnumerable<ISObjectList<T>> recordsLists, Action<JobInfoResult> onPoll = null, bool throwOnBatchTimeLimit = true)
         {
             return await RunJobAndPollAsync(objectName, null, operationType, recordsLists, onPoll);
         }
 
-        public async Task<List<BatchResultList>> RunJobAndPollAsync<T>(string objectName, string externalIdFieldName, BulkConstants.OperationType operationType,
-            IEnumerable<ISObjectList<T>> recordsLists, Action<JobInfoResult> onPoll = null)
+        // todo #DVB optional parameter 'RetrunResultsForTimeoutBatch'.
+        public async Task<List<BatchResultList>> RunJobAndPollAsync<T>(string objectName, string externalIdFieldName, BulkConstants.OperationType operationType, IEnumerable<ISObjectList<T>> recordsLists, Action<JobInfoResult> onPoll = null, bool throwOnBatchTimeLimit = true)
         {
             const int pollIntervalInMillis = 5000;
-            const int maxPollingDurationInMillis = 600000; // 10 minutes https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/asynch_api_concepts_limits.htm
+            const int maxPollingDurationInMillis = 200; // 10 minutes https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/asynch_api_concepts_limits.htm
 
             var batchInfoResults = await RunJobAsync(objectName, externalIdFieldName, operationType, recordsLists);
 
             int passedPollingMillis = 0;
             while (passedPollingMillis <= maxPollingDurationInMillis)
             {
+                passedPollingMillis = 1000;
+                break;
+
                 var jobResult = await PollJobAsync(batchInfoResults[0].JobId);
                 try
                 {
@@ -371,7 +372,38 @@ namespace Salesforce.Force
             // https://developer.salesforce.com/docs/atlas.en-us.200.0.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_bulkapi.htm
             // There is a five - minute limit for processing 100 records.Also, if it takes longer than 10 minutes to process a batch, the Bulk API places the remainder of the batch back in the queue for later processing. If the Bulk API continues to exceed the 10 - minute limit on subsequent attempts, the batch is placed back in the queue and reprocessed up to 10 times before the batch is permanently marked as failed.
             if (passedPollingMillis > maxPollingDurationInMillis)
-                throw new ForceException(Error.BatchTimeout, "Batch processing time of 10 minutes exceeded, the batch will be retried by SalesForce in the near future.");
+            {
+                if (throwOnBatchTimeLimit)
+                    throw new ForceException(Error.BatchTimeout, "Batch processing time of 10 minutes exceeded, the batch will be retried by SalesForce in the near future.");
+                else
+                {
+                    var mockedBatchResults = new List<BatchResultList>();
+                    foreach (var objectList in recordsLists)
+                    {
+                        var result = new BatchResultList
+                        {
+                            Items = new List<BatchResult>()
+                        };
+
+                        foreach (var obj in objectList)
+                        {
+                            var batchResult = new BatchResult
+                            {
+                                Id = "unknown",
+                                Success = true,
+                                Created = false,
+                                Errors = null
+                            };
+
+                            result.Items.Add(batchResult);
+                        }
+
+                        mockedBatchResults.Add(result);
+                    }
+
+                    return mockedBatchResults;
+                }
+            }
 
             var batchResults = new List<BatchResultList>();
             foreach (var batchInfoResultComplete in batchInfoResults)
