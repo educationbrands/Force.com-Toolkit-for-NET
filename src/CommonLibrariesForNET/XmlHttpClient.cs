@@ -67,8 +67,15 @@ namespace Salesforce.Common
 
         private static ForceException ParseForceException(string responseMessage)
         {
-            var errorResponse = DeserializeXmlString<ErrorResponse>(responseMessage);
-            return new ForceException(errorResponse.ErrorCode, errorResponse.Message);
+            try
+            {
+                var errorResponse = DeserializeXmlString<ErrorResponse>(responseMessage);
+                return new ForceException(errorResponse.ErrorCode, errorResponse.Message);
+            }
+            catch (Exception)
+            {
+                return new ForceException("unknown", responseMessage);
+            }
         }
 
         private static string SerializeXmlObject(object inputObject)
